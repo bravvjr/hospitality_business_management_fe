@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { login } from "@/features/auth/api";
 import {
   loginSchema,
@@ -14,7 +16,6 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAppDispatch } from "@/lib/store/hooks";
 import { setSession } from "@/lib/store/slices/auth-slice";
-import { Button } from "@/components/ui/button";
 
 const fieldClassName =
   "mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-ring focus:ring-2";
@@ -70,11 +71,9 @@ export function LoginForm() {
         <label htmlFor="password" className="text-sm font-medium text-foreground">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
-          className={fieldClassName}
           {...register("password")}
         />
         {errors.password ? (

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { register as registerAccount } from "@/features/auth/api";
 import {
   registerSchema,
@@ -14,7 +16,6 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAppDispatch } from "@/lib/store/hooks";
 import { setSession } from "@/lib/store/slices/auth-slice";
-import { Button } from "@/components/ui/button";
 
 const fieldClassName =
   "mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-ring focus:ring-2";
@@ -33,6 +34,7 @@ export function RegisterForm() {
     defaultValues: {
       email: "",
       password: "",
+      confirm_password: "",
       tenant_name: "",
       base_currency: "KES",
     },
@@ -101,15 +103,32 @@ export function RegisterForm() {
         <label htmlFor="password" className="text-sm font-medium text-foreground">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="new-password"
-          className={fieldClassName}
           {...register("password")}
         />
         {errors.password ? (
           <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+        ) : null}
+      </div>
+
+      <div>
+        <label
+          htmlFor="confirm_password"
+          className="text-sm font-medium text-foreground"
+        >
+          Confirm password
+        </label>
+        <PasswordInput
+          id="confirm_password"
+          autoComplete="new-password"
+          {...register("confirm_password")}
+        />
+        {errors.confirm_password ? (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.confirm_password.message}
+          </p>
         ) : null}
       </div>
 
