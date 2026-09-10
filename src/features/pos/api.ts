@@ -1,21 +1,14 @@
 import { apiFetch, apiFetchText } from "@/lib/api/client";
+import { listProducts } from "@/features/inventory/api";
+import type { Page, ProductRead } from "@/features/inventory/types";
 
-import type {
-  OrderRead,
-  Page,
-  ProductRead,
-  SaleReceiptRead,
-} from "./types";
+import type { OrderRead, SaleReceiptRead } from "./types";
 
 export function listSellableProducts(params?: {
   limit?: number;
   offset?: number;
 }): Promise<Page<ProductRead>> {
-  const limit = params?.limit ?? 200;
-  const offset = params?.offset ?? 0;
-  return apiFetch<Page<ProductRead>>(
-    `/api/v1/inventory/products?limit=${limit}&offset=${offset}`,
-  );
+  return listProducts(params);
 }
 
 export function createOrder(payload: {

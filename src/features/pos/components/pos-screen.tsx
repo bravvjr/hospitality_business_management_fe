@@ -15,7 +15,7 @@ import {
   updateOrderItem,
 } from "@/features/pos/api";
 import { ReceiptModal } from "@/features/pos/components/receipt-modal";
-import type { ProductRead } from "@/features/pos/types";
+import type { ProductRead } from "@/features/inventory/types";
 import { ApiError } from "@/lib/api/client";
 import { formatMinorUnits, parseMajorToMinor } from "@/lib/money";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";

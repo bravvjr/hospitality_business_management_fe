@@ -1,31 +1,6 @@
-export interface Page<T> {
-  items: T[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+import type { ProductRead } from "@/features/inventory/types";
 
-export interface UnitRead {
-  id: string;
-  key: string;
-  name: string;
-  symbol: string;
-}
-
-export interface ProductRead {
-  id: string;
-  tenant_id: string;
-  name: string;
-  sku: string | null;
-  category: string | null;
-  base_unit: UnitRead;
-  reorder_level_base: string | null;
-  unit_price_minor: number | null;
-  currency: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
+export type { ProductRead };
 
 export interface OrderItemRead {
   id: string;
