@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { logout as logoutRequest } from "@/features/auth/api";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import {
   clearSession,
   selectIsAuthenticated,
 } from "@/lib/store/slices/auth-slice";
-import { Button } from "@/components/ui/button";
 
 /** Require an authenticated session for (app) routes. */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -57,9 +58,12 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
           </p>
           <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
         </div>
-        <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
-          Log out
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
+            Log out
+          </Button>
+        </div>
       </header>
       <div className="flex flex-1">{children}</div>
     </div>
