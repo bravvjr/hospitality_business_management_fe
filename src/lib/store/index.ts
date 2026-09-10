@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import authReducer from "./slices/auth-slice";
+import posReducer from "./slices/pos-slice";
 
 export const makeStore = () =>
   configureStore({
     reducer: {
       auth: authReducer,
+      pos: posReducer,
     },
     devTools: process.env.NODE_ENV !== "production",
   });

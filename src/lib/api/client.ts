@@ -60,3 +60,23 @@ export async function apiFetch<T>(
 
   return response.json() as Promise<T>;
 }
+
+export async function apiFetchText(
+  path: string,
+  init?: RequestInit,
+): Promise<string> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+    ...init,
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new ApiError(
+      messageFromBody(body, response.statusText),
+      response.status,
+    );
+  }
+
+  return response.text();
+}

@@ -1,8 +1,5 @@
+import { InventoryScreen } from "@/features/inventory/components/inventory-screen";
+
 export default function InventoryPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Inventory</h1>
-      <p className="mt-2 text-muted-foreground">Inventory module — coming next.</p>
-    </div>
-  );
+  return <InventoryScreen />;
 }
