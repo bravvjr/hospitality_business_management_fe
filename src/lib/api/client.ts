@@ -11,22 +11,47 @@ export class ApiError extends Error {
   }
 }
 
+function messageFromBody(body: string, fallback: string): string {
+  if (!body) return fallback;
+  try {
+    const json = JSON.parse(body) as { detail?: unknown };
+    if (typeof json.detail === "string") return json.detail;
+    if (Array.isArray(json.detail)) {
+      return json.detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (item && typeof item === "object" && "msg" in item) {
+            return String((item as { msg: unknown }).msg);
+          }
+          return JSON.stringify(item);
+        })
+        .join("; ");
+    }
+  } catch {
+    // plain-text body
+  }
+  return body;
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
+    ...init,
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
-    ...init,
   });
 
   if (!response.ok) {
     const body = await response.text();
-    throw new ApiError(body || response.statusText, response.status);
+    throw new ApiError(
+      messageFromBody(body, response.statusText),
+      response.status,
+    );
   }
 
   if (response.status === 204) {

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 
+import { AuthHydrator } from "@/features/auth/components/auth-hydrator";
 import { ReduxProvider } from "@/lib/store/provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -22,7 +23,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ReduxProvider>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthHydrator>{children}</AuthHydrator>
+        </QueryClientProvider>
       </ReduxProvider>
     </ThemeProvider>
   );
