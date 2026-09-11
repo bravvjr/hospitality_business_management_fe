@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { siteContent } from "@/features/marketing/content";
 import { cn } from "@/lib/utils";
@@ -11,7 +12,8 @@ export function SiteHeader() {
         <Link href="/" className="text-lg font-semibold tracking-tight text-brand-icy-orange">
           {siteContent.brand}
         </Link>
-        <nav className="flex items-center gap-3">
+        <nav className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <Link
             href="/login"
             className={cn(

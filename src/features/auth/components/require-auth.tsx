@@ -3,39 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { logout as logoutRequest } from "@/features/auth/api";
-import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
-import {
-  clearSession,
-  selectIsAuthenticated,
-} from "@/lib/store/slices/auth-slice";
+import { useAppSelector } from "@/lib/store/hooks";
+import { selectIsAuthenticated } from "@/lib/store/slices/auth-slice";
 
 /** Require an authenticated session for (app) routes. */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const hydrated = useAppSelector((state) => state.auth.hydrated);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const user = useAppSelector((state) => state.auth.user);
-  const tenant = useAppSelector((state) => state.auth.tenant);
 
   useEffect(() => {
     if (hydrated && !isAuthenticated) {
       router.replace("/login");
     }
   }, [hydrated, isAuthenticated, router]);
-
-  async function handleLogout() {
-    try {
-      await logoutRequest();
-    } catch {
-      // Clear local session even if the API call fails.
-    }
-    dispatch(clearSession());
-    router.replace("/login");
-  }
 
   if (!hydrated) {
     return (
@@ -49,23 +30,5 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-brand-rich-teal">
-            {tenant?.name ?? "HBM App"}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
-            Log out
-          </Button>
-        </div>
-      </header>
-      <div className="flex flex-1">{children}</div>
-    </div>
-  );
+  return children;
 }

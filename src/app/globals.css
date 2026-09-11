@@ -23,6 +23,10 @@
   --muted-foreground: #005f73;
   --border: #94d2bd66;
   --ring: #0a9396;
+  --input: #94d2bd99;
+  --primary: #0a9396;
+  --primary-foreground: #fefae0;
+  --destructive: #b42318;
 }
 
 .dark {
@@ -34,6 +38,10 @@
   --muted-foreground: #94d2bd;
   --border: #005f7366;
   --ring: #94d2bd;
+  --input: #005f7399;
+  --primary: #94d2bd;
+  --primary-foreground: #001219;
+  --destructive: #ff6b6b;
 }
 
 @theme inline {
@@ -45,6 +53,10 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
   --color-brand-deep-cyan: var(--brand-deep-cyan);
   --color-brand-rich-cyan: var(--brand-rich-cyan);
   --color-brand-rich-teal: var(--brand-rich-teal);
