@@ -48,13 +48,13 @@ repository (ADR-002 repository strategy).
 ## Current focus (frontend)
 
 **Phase 1 frontend is complete** for the sell-as-stocked MVP: marketing landing, auth,
-app shell, POS (+ receipt), inventory, dashboard, expenses, staff, theme toggle.
+app shell, POS (+ receipt), inventory, dashboard, expenses, staff, reports, recipes,
+theme toggle.
 
-**Deferred from Phase 1 UI:** reports screens (backend APIs ready), full
-permission/entitlement-gated nav until `/api/v1/auth/me` exposes grants, staging/production
-deploy.
+**Deferred from Phase 1 UI:** full permission/entitlement-gated nav until
+`/api/v1/auth/me` exposes grants, staging/production deploy.
 
-**Next (Phase 2):** recipes / ingredient BOM UI, then reports UI.
+**Next (Phase 2):** ingredient costing, kitchen order workflow (KDS).
 
 Update the Notion roadmap when a checklist item is done — do not duplicate the full
 checklist here.
