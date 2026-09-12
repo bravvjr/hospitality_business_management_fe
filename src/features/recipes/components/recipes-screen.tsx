@@ -14,6 +14,7 @@ import {
   deleteRecipe,
   deleteRecipeItem,
   getRecipe,
+  getRecipeCost,
   listRecipes,
   updateRecipe,
   updateRecipeItem,
@@ -28,6 +29,7 @@ import {
 import type { RecipeRead, RecipeSummaryRead } from "@/features/recipes/types";
 import { ApiError } from "@/lib/api/client";
 import { hasPermission } from "@/lib/auth/permissions";
+import { formatMinorUnits } from "@/lib/money";
 import { permissionsForRole } from "@/lib/auth/role-permissions";
 import { useAppSelector } from "@/lib/store/hooks";
 
@@ -71,6 +73,12 @@ export function RecipesScreen() {
     enabled: Boolean(selectedId),
   });
 
+  const costQuery = useQuery({
+    queryKey: ["recipes", "cost", selectedId],
+    queryFn: () => getRecipeCost(selectedId!),
+    enabled: Boolean(selectedId),
+  });
+
   const recipes = recipesQuery.data?.items ?? [];
   const products = productsQuery.data?.items ?? [];
 
@@ -105,6 +113,16 @@ export function RecipesScreen() {
 
   async function invalidateRecipes() {
     await queryClient.invalidateQueries({ queryKey: ["recipes"] });
+  }
+
+  async function invalidateRecipeDetail(recipeId: string) {
+    await invalidateRecipes();
+    await queryClient.invalidateQueries({
+      queryKey: ["recipes", "detail", recipeId],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["recipes", "cost", recipeId],
+    });
   }
 
   const createForm = useForm<CreateRecipeFormValues>({
@@ -254,10 +272,7 @@ export function RecipesScreen() {
       });
       addIngredientForm.reset({ ingredient_product_id: "", quantity: "" });
       setShowAddIngredient(false);
-      await invalidateRecipes();
-      await queryClient.invalidateQueries({
-        queryKey: ["recipes", "detail", recipe.id],
-      });
+      await invalidateRecipeDetail(recipe.id);
     } catch (error) {
       setActionError(
         error instanceof ApiError ? error.message : "Could not add ingredient",
@@ -272,9 +287,7 @@ export function RecipesScreen() {
     try {
       await updateRecipeItem(recipeId, itemId, { quantity });
       setEditingItemId(null);
-      await queryClient.invalidateQueries({
-        queryKey: ["recipes", "detail", recipeId],
-      });
+      await invalidateRecipeDetail(recipeId);
     } catch (error) {
       setActionError(
         error instanceof ApiError ? error.message : "Could not update ingredient",
@@ -287,10 +300,7 @@ export function RecipesScreen() {
     setActionError(null);
     try {
       await deleteRecipeItem(recipeId, itemId);
-      await invalidateRecipes();
-      await queryClient.invalidateQueries({
-        queryKey: ["recipes", "detail", recipeId],
-      });
+      await invalidateRecipeDetail(recipeId);
     } catch (error) {
       setActionError(
         error instanceof ApiError ? error.message : "Could not remove ingredient",
@@ -299,6 +309,7 @@ export function RecipesScreen() {
   }
 
   const selectedRecipe = detailQuery.data;
+  const recipeCost = costQuery.data;
 
   return (
     <div className="space-y-6">
@@ -585,6 +596,109 @@ export function RecipesScreen() {
                     >
                       Delete
                     </Button>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <h3 className="text-sm font-semibold">Ingredient cost</h3>
+                {costQuery.isLoading ? (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Calculating cost…
+                  </p>
+                ) : costQuery.isError ? (
+                  <p className="mt-2 text-sm text-red-600">
+                    {(costQuery.error as Error).message}
+                  </p>
+                ) : recipeCost ? (
+                  <div className="mt-3 space-y-2 text-sm">
+                    {recipeCost.is_complete ? (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <p>
+                          <span className="text-muted-foreground">
+                            Cost per serving:
+                          </span>{" "}
+                          <span className="font-medium">
+                            {formatMinorUnits(
+                              recipeCost.cost_per_yield_minor ?? 0,
+                              recipeCost.currency,
+                            )}
+                          </span>
+                        </p>
+                        {recipeCost.sell_price_minor != null ? (
+                          <p>
+                            <span className="text-muted-foreground">
+                              Sell price:
+                            </span>{" "}
+                            <span className="font-medium">
+                              {formatMinorUnits(
+                                recipeCost.sell_price_minor,
+                                recipeCost.currency,
+                              )}
+                            </span>
+                          </p>
+                        ) : null}
+                        {recipeCost.margin_minor != null ? (
+                          <p>
+                            <span className="text-muted-foreground">
+                              Margin:
+                            </span>{" "}
+                            <span className="font-medium">
+                              {formatMinorUnits(
+                                recipeCost.margin_minor,
+                                recipeCost.currency,
+                              )}
+                              {recipeCost.margin_percent
+                                ? ` (${recipeCost.margin_percent}%)`
+                                : ""}
+                            </span>
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Set a unit cost on every ingredient (in{" "}
+                        {recipeCost.currency}) from Inventory to see the full
+                        recipe cost and margin.
+                      </p>
+                    )}
+                    {recipeCost.lines.length > 0 ? (
+                      <div className="overflow-x-auto rounded-lg border border-border">
+                        <table className="min-w-full text-left text-xs">
+                          <thead className="bg-muted/60 text-muted-foreground">
+                            <tr>
+                              <th className="px-2 py-1.5 font-medium">
+                                Ingredient
+                              </th>
+                              <th className="px-2 py-1.5 font-medium">
+                                Line cost
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recipeCost.lines.map((line) => (
+                              <tr
+                                key={line.recipe_item_id}
+                                className="border-t border-border"
+                              >
+                                <td className="px-2 py-1.5">
+                                  {line.ingredient_name}
+                                </td>
+                                <td className="px-2 py-1.5">
+                                  {line.line_cost_minor != null &&
+                                  line.currency
+                                    ? formatMinorUnits(
+                                        line.line_cost_minor,
+                                        line.currency,
+                                      )
+                                    : "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

@@ -212,6 +212,7 @@ export function InventoryScreen() {
                     <th className="px-3 py-2 font-medium">SKU</th>
                     <th className="px-3 py-2 font-medium">Unit</th>
                     <th className="px-3 py-2 font-medium">Price</th>
+                    <th className="px-3 py-2 font-medium">Unit cost</th>
                     <th className="px-3 py-2 font-medium">Status</th>
                     <th className="px-3 py-2 font-medium">Actions</th>
                   </tr>
@@ -236,6 +237,15 @@ export function InventoryScreen() {
                           ? formatMinorUnits(
                               product.unit_price_minor,
                               product.currency,
+                            )
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {product.unit_cost_minor != null &&
+                        product.cost_currency
+                          ? formatMinorUnits(
+                              product.unit_cost_minor,
+                              product.cost_currency,
                             )
                           : "—"}
                       </td>

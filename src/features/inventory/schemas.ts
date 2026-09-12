@@ -20,6 +20,14 @@ export const productFormSchema = z.object({
       "Enter a valid price (e.g. 150 or 150.50)",
     ),
   currency: z.string().max(3).optional(),
+  unit_cost_major: z
+    .string()
+    .optional()
+    .refine(
+      (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
+      "Enter a valid cost (e.g. 50 or 50.00)",
+    ),
+  cost_currency: z.string().max(3).optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
