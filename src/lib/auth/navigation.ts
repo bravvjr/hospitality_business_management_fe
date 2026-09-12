@@ -12,6 +12,7 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", permission: "dashboard.read" },
   { href: "/pos", label: "POS", permission: "pos.read" },
   { href: "/inventory", label: "Inventory", permission: "inventory.read" },
+  { href: "/recipes", label: "Recipes", permission: "recipes.read" },
   { href: "/expenses", label: "Expenses", permission: "expenses.read" },
   { href: "/reports", label: "Reports", permission: "reports.read" },
   { href: "/settings/staff", label: "Staff", permission: "staff.read" },

@@ -17,6 +17,8 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     "expenses.write",
     "dashboard.read",
     "reports.read",
+    "recipes.read",
+    "recipes.write",
   ],
   manager: [
     "staff.read",
@@ -30,6 +32,8 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     "expenses.write",
     "dashboard.read",
     "reports.read",
+    "recipes.read",
+    "recipes.write",
   ],
   finance: [
     "inventory.read",
@@ -38,14 +42,21 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     "expenses.write",
     "dashboard.read",
     "reports.read",
+    "recipes.read",
   ],
   cashier: [
     "inventory.read",
     "pos.read",
     "pos.write",
     "dashboard.read",
+    "recipes.read",
   ],
-  kitchen: ["inventory.read", "pos.read"],
+  kitchen: [
+    "inventory.read",
+    "pos.read",
+    "recipes.read",
+    "recipes.write",
+  ],
 };
 
 export function permissionsForRole(roleKey: string): PermissionKey[] {
