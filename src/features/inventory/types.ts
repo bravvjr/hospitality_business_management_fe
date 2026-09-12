@@ -22,6 +22,8 @@ export interface ProductRead {
   reorder_level_base: string | null;
   unit_price_minor: number | null;
   currency: string | null;
+  unit_cost_minor: number | null;
+  cost_currency: string | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -35,6 +37,8 @@ export interface ProductCreateRequest {
   reorder_level_base?: string | null;
   unit_price_minor?: number | null;
   currency?: string | null;
+  unit_cost_minor?: number | null;
+  cost_currency?: string | null;
 }
 
 export interface ProductUpdateRequest {
@@ -44,6 +48,8 @@ export interface ProductUpdateRequest {
   reorder_level_base?: string | null;
   unit_price_minor?: number | null;
   currency?: string | null;
+  unit_cost_minor?: number | null;
+  cost_currency?: string | null;
   status?: "active" | "inactive" | null;
 }
 

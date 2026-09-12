@@ -63,3 +63,28 @@ export interface RecipeUpdateRequest {
   status?: "active" | "inactive";
   notes?: string | null;
 }
+
+export interface RecipeCostLineRead {
+  recipe_item_id: string;
+  ingredient_product_id: string;
+  ingredient_name: string;
+  quantity: string;
+  unit: UnitRead;
+  unit_cost_minor: number | null;
+  line_cost_minor: number | null;
+  currency: string | null;
+}
+
+export interface RecipeCostRead {
+  recipe_id: string;
+  product_id: string;
+  currency: string;
+  yields_quantity: string;
+  total_cost_minor: number | null;
+  cost_per_yield_minor: number | null;
+  sell_price_minor: number | null;
+  margin_minor: number | null;
+  margin_percent: string | null;
+  is_complete: boolean;
+  lines: RecipeCostLineRead[];
+}

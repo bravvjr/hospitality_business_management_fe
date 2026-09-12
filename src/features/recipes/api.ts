@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api/client";
 
 import type {
   Page,
+  RecipeCostRead,
   RecipeCreateRequest,
   RecipeItemCreateRequest,
   RecipeItemRead,
@@ -28,6 +29,10 @@ export function listRecipes(params?: {
 
 export function getRecipe(recipeId: string): Promise<RecipeRead> {
   return apiFetch<RecipeRead>(`/api/v1/recipes/${recipeId}`);
+}
+
+export function getRecipeCost(recipeId: string): Promise<RecipeCostRead> {
+  return apiFetch<RecipeCostRead>(`/api/v1/recipes/${recipeId}/cost`);
 }
 
 export function createRecipe(payload: RecipeCreateRequest): Promise<RecipeRead> {

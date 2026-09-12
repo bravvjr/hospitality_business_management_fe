@@ -51,6 +51,8 @@ export function ProductCreateForm({
       reorder_level_base: "",
       unit_price_major: "",
       currency: tenantCurrency,
+      unit_cost_major: "",
+      cost_currency: tenantCurrency,
     },
   });
 
@@ -67,6 +69,16 @@ export function ProductCreateForm({
     }
 
     const currency = (values.currency || tenantCurrency).toUpperCase();
+    const costMajor = values.unit_cost_major?.trim() ?? "";
+    let unitCostMinor: number | null = null;
+    if (costMajor) {
+      unitCostMinor = parseMajorToMinor(costMajor);
+      if (unitCostMinor == null) {
+        setFormError("Enter a valid unit cost");
+        return;
+      }
+    }
+    const costCurrency = (values.cost_currency || tenantCurrency).toUpperCase();
 
     try {
       await createProduct({
@@ -77,6 +89,8 @@ export function ProductCreateForm({
         reorder_level_base: values.reorder_level_base?.trim() || null,
         unit_price_minor: unitPriceMinor,
         currency: unitPriceMinor != null ? currency : null,
+        unit_cost_minor: unitCostMinor,
+        cost_currency: unitCostMinor != null ? costCurrency : null,
       });
       onCreated();
     } catch (error) {
@@ -178,6 +192,32 @@ export function ProductCreateForm({
             inputMode="decimal"
             className={fieldClassName}
             {...register("reorder_level_base")}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="unit_cost_major" className="text-sm font-medium">
+            Unit cost (per base unit)
+          </label>
+          <input
+            id="unit_cost_major"
+            inputMode="decimal"
+            placeholder="e.g. 50.00"
+            className={fieldClassName}
+            {...register("unit_cost_major")}
+          />
+        </div>
+        <div>
+          <label htmlFor="cost_currency" className="text-sm font-medium">
+            Cost currency
+          </label>
+          <input
+            id="cost_currency"
+            maxLength={3}
+            className={`${fieldClassName} uppercase`}
+            {...register("cost_currency")}
           />
         </div>
       </div>
