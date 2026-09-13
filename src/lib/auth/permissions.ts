@@ -11,7 +11,9 @@ export type PermissionKey =
   | "dashboard.read"
   | "reports.read"
   | "recipes.read"
-  | "recipes.write";
+  | "recipes.write"
+  | "kitchen.read"
+  | "kitchen.write";
 
 export function hasPermission(
   permissions: string[],

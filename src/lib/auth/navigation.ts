@@ -11,6 +11,7 @@ export interface NavItem {
 export const APP_NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", permission: "dashboard.read" },
   { href: "/pos", label: "POS", permission: "pos.read" },
+  { href: "/kitchen", label: "Kitchen", permission: "kitchen.read" },
   { href: "/inventory", label: "Inventory", permission: "inventory.read" },
   { href: "/recipes", label: "Recipes", permission: "recipes.read" },
   { href: "/expenses", label: "Expenses", permission: "expenses.read" },

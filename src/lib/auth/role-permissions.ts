@@ -19,6 +19,8 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     "reports.read",
     "recipes.read",
     "recipes.write",
+    "kitchen.read",
+    "kitchen.write",
   ],
   manager: [
     "staff.read",
@@ -34,6 +36,8 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     "reports.read",
     "recipes.read",
     "recipes.write",
+    "kitchen.read",
+    "kitchen.write",
   ],
   finance: [
     "inventory.read",
@@ -50,12 +54,15 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     "pos.write",
     "dashboard.read",
     "recipes.read",
+    "kitchen.read",
   ],
   kitchen: [
     "inventory.read",
     "pos.read",
     "recipes.read",
     "recipes.write",
+    "kitchen.read",
+    "kitchen.write",
   ],
 };
 

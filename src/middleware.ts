@@ -6,6 +6,7 @@ const AUTH_COOKIE = "access_token";
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/pos",
+  "/kitchen",
   "/inventory",
   "/recipes",
   "/expenses",
@@ -42,6 +43,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/pos/:path*",
+    "/kitchen/:path*",
     "/inventory/:path*",
     "/recipes/:path*",
     "/expenses/:path*",
