@@ -2,6 +2,13 @@ import type { ProductRead } from "@/features/inventory/types";
 
 export type { ProductRead };
 
+export interface Page<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface OrderItemRead {
   id: string;
   product_id: string;
@@ -34,6 +41,10 @@ export interface OrderRead {
   cashier_user_id: string | null;
   completed_at: string | null;
   receipt_number: number | null;
+  kitchen_status: string | null;
+  voided_at: string | null;
+  voided_by_user_id: string | null;
+  void_reason: string | null;
   note: string | null;
   items: OrderItemRead[];
   payments: PaymentRead[];

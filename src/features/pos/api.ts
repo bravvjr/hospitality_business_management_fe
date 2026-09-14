@@ -79,3 +79,28 @@ export function getReceipt(orderId: string): Promise<SaleReceiptRead> {
 export function getReceiptText(orderId: string): Promise<string> {
   return apiFetchText(`/api/v1/pos/orders/${orderId}/receipt.txt`);
 }
+
+export function listOrders(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Page<OrderRead>> {
+  const limit = params?.limit ?? 20;
+  const offset = params?.offset ?? 0;
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (params?.status) query.set("status", params.status);
+  return apiFetch<Page<OrderRead>>(`/api/v1/pos/orders?${query.toString()}`);
+}
+
+export function voidOrder(
+  orderId: string,
+  payload: { reason?: string | null } = {},
+): Promise<OrderRead> {
+  return apiFetch<OrderRead>(`/api/v1/pos/orders/${orderId}/void`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

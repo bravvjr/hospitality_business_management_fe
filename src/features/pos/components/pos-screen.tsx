@@ -10,9 +10,11 @@ import {
   completeSale,
   createOrder,
   getOrder,
+  listOrders,
   listSellableProducts,
   removeOrderItem,
   updateOrderItem,
+  voidOrder,
 } from "@/features/pos/api";
 import { ReceiptModal } from "@/features/pos/components/receipt-modal";
 import type { ProductRead } from "@/features/inventory/types";
@@ -52,6 +54,7 @@ export function PosScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [tenderedMajor, setTenderedMajor] = useState("");
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
+  const [voidingOrderId, setVoidingOrderId] = useState<string | null>(null);
 
   const productsQuery = useQuery({
     queryKey: ["inventory", "products", "pos"],
@@ -62,6 +65,11 @@ export function PosScreen() {
     queryKey: ["pos", "order", openOrderId],
     queryFn: () => getOrder(openOrderId!),
     enabled: Boolean(openOrderId),
+  });
+
+  const recentSalesQuery = useQuery({
+    queryKey: ["pos", "orders", "completed"],
+    queryFn: () => listOrders({ status: "completed", limit: 10 }),
   });
 
   const ensureOrder = useMutation({
@@ -163,6 +171,8 @@ export function PosScreen() {
       dispatch(clearPosSale());
       setTenderedMajor("");
       queryClient.removeQueries({ queryKey: ["pos", "order", order.id] });
+      queryClient.invalidateQueries({ queryKey: ["pos", "orders", "completed"] });
+      queryClient.invalidateQueries({ queryKey: ["kitchen", "tickets"] });
     } catch (error) {
       setActionError(
         error instanceof ApiError ? error.message : "Could not complete sale",
@@ -175,6 +185,44 @@ export function PosScreen() {
     dispatch(clearPosSale());
     setTenderedMajor("");
     setActionError(null);
+  }
+
+  async function handleCancelOpenOrder() {
+    if (!openOrderId) return;
+    setActionError(null);
+    setVoidingOrderId(openOrderId);
+    try {
+      await voidOrder(openOrderId, { reason: "Cancelled at POS" });
+      dispatch(clearPosSale());
+      queryClient.removeQueries({ queryKey: ["pos", "order", openOrderId] });
+    } catch (error) {
+      setActionError(
+        error instanceof ApiError ? error.message : "Could not cancel order",
+      );
+    } finally {
+      setVoidingOrderId(null);
+    }
+  }
+
+  async function handleVoidCompletedSale(orderId: string, receiptNumber: number | null) {
+    const label = receiptNumber != null ? `receipt #${receiptNumber}` : "this sale";
+    if (!window.confirm(`Void ${label} and refund cash? Stock will be restored.`)) {
+      return;
+    }
+    setActionError(null);
+    setVoidingOrderId(orderId);
+    try {
+      await voidOrder(orderId, { reason: "Voided at POS" });
+      queryClient.invalidateQueries({ queryKey: ["pos", "orders", "completed"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "products", "pos"] });
+      queryClient.invalidateQueries({ queryKey: ["kitchen", "tickets"] });
+    } catch (error) {
+      setActionError(
+        error instanceof ApiError ? error.message : "Could not void sale",
+      );
+    } finally {
+      setVoidingOrderId(null);
+    }
   }
 
   const order = orderQuery.data;
@@ -354,6 +402,68 @@ export function PosScreen() {
           >
             Complete cash sale
           </Button>
+
+          {openOrderId && order && order.items.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              disabled={voidingOrderId === openOrderId}
+              onClick={() => void handleCancelOpenOrder()}
+            >
+              Cancel order
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="mt-6 border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-foreground">Recent sales</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Void a completed sale to refund cash and restore stock.
+          </p>
+          {recentSalesQuery.isLoading ? (
+            <p className="mt-3 text-sm text-muted-foreground">Loading…</p>
+          ) : null}
+          {!recentSalesQuery.isLoading &&
+          (recentSalesQuery.data?.items.length ?? 0) === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">No recent sales.</p>
+          ) : null}
+          <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto">
+            {(recentSalesQuery.data?.items ?? []).map((sale) => (
+              <li
+                key={sale.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {sale.receipt_number != null
+                      ? `Receipt #${sale.receipt_number}`
+                      : `Order ${sale.id.slice(0, 8)}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatMinorUnits(sale.total_minor, sale.currency)}
+                    {sale.completed_at
+                      ? ` · ${new Date(sale.completed_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}`
+                      : null}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={voidingOrderId === sale.id}
+                  onClick={() =>
+                    void handleVoidCompletedSale(sale.id, sale.receipt_number)
+                  }
+                >
+                  Void
+                </Button>
+              </li>
+            ))}
+          </ul>
         </div>
       </aside>
 
