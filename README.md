@@ -24,6 +24,17 @@ Open http://localhost:3000 for the marketing landing page.
 
 Set `NEXT_PUBLIC_API_URL` to your backend (default `http://localhost:8000`).
 
+## Staging (Docker)
+
+With the [backend staging stack](https://github.com/bravvjr/hospitality_business_management) running on port 8000:
+
+```bash
+cp .env.staging.example .env.staging
+docker compose -f docker-compose.staging.yml --env-file .env.staging up --build -d
+```
+
+Open http://localhost:3000 (or `WEB_PORT`). Ensure the backend `CORS_ORIGINS` includes this origin.
+
 ## Project structure
 
 ```text
