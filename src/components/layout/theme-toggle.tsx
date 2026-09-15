@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 function useIsClient() {
   return useSyncExternalStore(
@@ -14,13 +15,19 @@ function useIsClient() {
   );
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useIsClient();
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="sm" aria-label="Toggle theme" disabled>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={className}
+        aria-label="Toggle theme"
+        disabled
+      >
         <Sun className="size-4" />
       </Button>
     );
@@ -31,6 +38,7 @@ export function ThemeToggle() {
       type="button"
       variant="ghost"
       size="sm"
+      className={cn(className)}
       aria-label="Toggle color theme"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >

@@ -168,7 +168,7 @@ export function ExpensesScreen() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <header className="glass-section flex flex-col gap-3 p-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Expenses</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -190,7 +190,7 @@ export function ExpensesScreen() {
             Add category
           </Button>
         </div>
-      </div>
+      </header>
 
       {summaryQuery.data ? (
         <div className="glass-panel rounded-2xl p-4 sm:flex sm:items-center sm:justify-between">
