@@ -15,6 +15,7 @@ import {
   updateOrderItem,
 } from "@/features/pos/api";
 import { ReceiptModal } from "@/features/pos/components/receipt-modal";
+import { SalesHistoryPanel } from "@/features/pos/components/sales-history-panel";
 import type { ProductRead } from "@/features/inventory/types";
 import { ApiError } from "@/lib/api/client";
 import { formatMinorUnits, parseMajorToMinor } from "@/lib/money";
@@ -25,13 +26,7 @@ import {
   setReceiptOrderId,
 } from "@/lib/store/slices/pos-slice";
 
-function isSellable(product: ProductRead): boolean {
-  return (
-    product.status === "active" &&
-    product.unit_price_minor != null &&
-    product.currency != null
-  );
-}
+type PosView = "sell" | "history";
 
 function quantityStep(current: string, delta: number): string {
   const next = Number(current) + delta;
@@ -49,12 +44,13 @@ export function PosScreen() {
   );
 
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<PosView>("sell");
   const [actionError, setActionError] = useState<string | null>(null);
   const [tenderedMajor, setTenderedMajor] = useState("");
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
 
   const productsQuery = useQuery({
-    queryKey: ["inventory", "products", "pos"],
+    queryKey: ["pos", "menu", "meals"],
     queryFn: () => listSellableProducts({ limit: 200 }),
   });
 
@@ -74,10 +70,9 @@ export function PosScreen() {
 
   const sellableProducts = useMemo(() => {
     const items = productsQuery.data?.items ?? [];
-    const filtered = items.filter(isSellable);
     const q = search.trim().toLowerCase();
-    if (!q) return filtered;
-    return filtered.filter(
+    if (!q) return items;
+    return items.filter(
       (product) =>
         product.name.toLowerCase().includes(q) ||
         product.sku?.toLowerCase().includes(q) ||
@@ -163,6 +158,8 @@ export function PosScreen() {
       dispatch(clearPosSale());
       setTenderedMajor("");
       queryClient.removeQueries({ queryKey: ["pos", "order", order.id] });
+      await queryClient.invalidateQueries({ queryKey: ["pos", "orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["pos", "menu"] });
     } catch (error) {
       setActionError(
         error instanceof ApiError ? error.message : "Could not complete sale",
@@ -182,13 +179,39 @@ export function PosScreen() {
   const canCheckout = Boolean(order && order.items.length > 0);
 
   return (
-    <div className="flex h-full min-h-[calc(100vh-8rem)] flex-col gap-4 lg:flex-row">
+    <div className="flex h-full min-h-[calc(100vh-8rem)] flex-col gap-4">
+      <div className="flex flex-wrap gap-2 border-b border-border/60">
+        {(
+          [
+            ["sell", "Sell"],
+            ["history", "Sales history"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setView(key)}
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+              view === key
+                ? "border-brand-rich-teal text-brand-rich-teal"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "history" ? <SalesHistoryPanel /> : null}
+
+      {view === "sell" ? (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <section className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Point of sale</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tap products to build an order, then take cash payment.
+              Tap menu meals to build an order, then take cash payment.
             </p>
           </div>
           <Button
@@ -205,12 +228,12 @@ export function PosScreen() {
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search products…"
+          placeholder="Search meals…"
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
         />
 
         {productsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading products…</p>
+          <p className="text-sm text-muted-foreground">Loading menu…</p>
         ) : null}
 
         {productsQuery.isError ? (
@@ -221,8 +244,8 @@ export function PosScreen() {
 
         {!productsQuery.isLoading && sellableProducts.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-            No sellable products yet. Add products with a unit price (and stock)
-            under Inventory, then return here.
+            No menu meals yet. Create a recipe under Recipes (meal name +
+            ingredients) and it will appear here for sale.
           </div>
         ) : null}
 
@@ -253,7 +276,7 @@ export function PosScreen() {
         <h2 className="text-lg font-semibold text-foreground">Current order</h2>
         {!order || order.items.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
-            Cart is empty. Select products to start a sale.
+            Cart is empty. Select meals to start a sale.
           </p>
         ) : (
           <ul className="mt-4 flex-1 space-y-3 overflow-y-auto">
@@ -363,6 +386,8 @@ export function PosScreen() {
           onClose={() => dispatch(setReceiptOrderId(null))}
           onNewSale={startNewSale}
         />
+      ) : null}
+    </div>
       ) : null}
     </div>
   );

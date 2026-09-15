@@ -52,7 +52,12 @@ export interface RecipeItemUpdateRequest {
 }
 
 export interface RecipeCreateRequest {
-  product_id: string;
+  /** Existing menu product (optional when creating a meal inline). */
+  product_id?: string;
+  /** Free-text meal name — creates a Menu product sold by the piece. */
+  meal_name?: string;
+  unit_price_minor?: number;
+  currency?: string;
   yields_quantity?: string;
   notes?: string | null;
   items: RecipeItemCreateRequest[];

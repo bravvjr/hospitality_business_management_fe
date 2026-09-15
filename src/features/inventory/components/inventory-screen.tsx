@@ -18,11 +18,13 @@ import {
   updateProduct,
 } from "@/features/inventory/api";
 import { ProductCreateForm } from "@/features/inventory/components/product-create-form";
+import { ProductEditForm } from "@/features/inventory/components/product-edit-form";
 import {
   StockActionForm,
   stockActionTitle,
   type StockActionKind,
 } from "@/features/inventory/components/stock-action-form";
+import type { ProductRead } from "@/features/inventory/types";
 import { formatMinorUnits } from "@/lib/money";
 
 type TabKey = "products" | "stock" | "movements";
@@ -31,6 +33,9 @@ export function InventoryScreen() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabKey>("products");
   const [showCreateProduct, setShowCreateProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductRead | null>(
+    null,
+  );
   const [stockAction, setStockAction] = useState<{
     kind: StockActionKind;
     productId?: string;
@@ -54,7 +59,10 @@ export function InventoryScreen() {
   });
 
   const products = useMemo(
-    () => productsQuery.data?.items ?? [],
+    () =>
+      (productsQuery.data?.items ?? []).filter(
+        (product) => product.category?.toLowerCase() !== "menu",
+      ),
     [productsQuery.data?.items],
   );
   const levels = levelsQuery.data?.items ?? [];
@@ -74,7 +82,7 @@ export function InventoryScreen() {
   async function invalidateInventory() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["inventory"] }),
-      queryClient.invalidateQueries({ queryKey: ["inventory", "products", "pos"] }),
+      queryClient.invalidateQueries({ queryKey: ["pos", "menu"] }),
     ]);
   }
 
@@ -98,12 +106,13 @@ export function InventoryScreen() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Inventory</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage products, stock levels, and movement history.
+            Track ingredient stock (milk, eggs, rice, …). Menu meals are created
+            under Recipes and sold on POS.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={() => setShowCreateProduct(true)}>
-            Add product
+            Add ingredient
           </Button>
           <Button
             type="button"
@@ -132,9 +141,11 @@ export function InventoryScreen() {
       <Dialog open={showCreateProduct} onOpenChange={setShowCreateProduct}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>New product</DialogTitle>
+            <DialogTitle>New ingredient</DialogTitle>
             <DialogDescription>
-              Add a product to receive stock and sell in POS.
+              Add a stocked ingredient (milk, rice, oil, …). Choose the base
+              unit you receive stock in; you can add smaller recipe units later
+              when editing.
             </DialogDescription>
           </DialogHeader>
           <ProductCreateForm
@@ -145,6 +156,34 @@ export function InventoryScreen() {
               setTab("products");
             }}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editingProduct != null}
+        onOpenChange={(open) => {
+          if (!open) setEditingProduct(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          {editingProduct ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Edit ingredient</DialogTitle>
+                <DialogDescription>
+                  Update reorder level, cost, and recipe measuring units.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductEditForm
+                product={editingProduct}
+                onCancel={() => setEditingProduct(null)}
+                onSaved={async () => {
+                  setEditingProduct(null);
+                  await invalidateInventory();
+                }}
+              />
+            </>
+          ) : null}
         </DialogContent>
       </Dialog>
 
@@ -180,7 +219,7 @@ export function InventoryScreen() {
       <div className="flex gap-2 border-b border-border/60">
         {(
           [
-            ["products", "Products"],
+            ["products", "Ingredients"],
             ["stock", "Stock levels"],
             ["movements", "Movements"],
           ] as const
@@ -210,11 +249,11 @@ export function InventoryScreen() {
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search products…"
+            placeholder="Search ingredients…"
             className="glass-surface w-full max-w-md rounded-lg px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
           />
           {productsQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading products…</p>
+            <p className="text-sm text-muted-foreground">Loading ingredients…</p>
           ) : null}
           {productsQuery.isError ? (
             <p className="text-sm text-red-600">
@@ -223,8 +262,8 @@ export function InventoryScreen() {
           ) : null}
           {!productsQuery.isLoading && filteredProducts.length === 0 ? (
             <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
-              No products yet. Add one to start receiving stock and selling in
-              POS.
+              No ingredients yet. Add milk, eggs, rice, and other stock items
+              here; create menu meals under Recipes.
             </p>
           ) : (
             <div className="glass-panel overflow-x-auto rounded-xl">
@@ -234,7 +273,7 @@ export function InventoryScreen() {
                     <th className="px-3 py-2 font-medium">Name</th>
                     <th className="px-3 py-2 font-medium">SKU</th>
                     <th className="px-3 py-2 font-medium">Unit</th>
-                    <th className="px-3 py-2 font-medium">Price</th>
+                    <th className="px-3 py-2 font-medium">Reorder</th>
                     <th className="px-3 py-2 font-medium">Unit cost</th>
                     <th className="px-3 py-2 font-medium">Status</th>
                     <th className="px-3 py-2 font-medium">Actions</th>
@@ -256,11 +295,8 @@ export function InventoryScreen() {
                       </td>
                       <td className="px-3 py-2">{product.base_unit.symbol}</td>
                       <td className="px-3 py-2">
-                        {product.unit_price_minor != null && product.currency
-                          ? formatMinorUnits(
-                              product.unit_price_minor,
-                              product.currency,
-                            )
+                        {product.reorder_level_base
+                          ? `${product.reorder_level_base} ${product.base_unit.symbol}`
                           : "—"}
                       </td>
                       <td className="px-3 py-2">
@@ -275,6 +311,13 @@ export function InventoryScreen() {
                       <td className="px-3 py-2 capitalize">{product.status}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            className="text-brand-rich-teal hover:underline"
+                            onClick={() => setEditingProduct(product)}
+                          >
+                            Edit
+                          </button>
                           <button
                             type="button"
                             className="text-brand-rich-teal hover:underline"

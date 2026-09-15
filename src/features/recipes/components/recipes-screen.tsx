@@ -26,6 +26,7 @@ import {
   updateRecipe,
   updateRecipeItem,
 } from "@/features/recipes/api";
+import { IngredientMeasureFields } from "@/features/recipes/components/ingredient-measure-fields";
 import {
   recipeCreateSchema,
   recipeIngredientLineSchema,
@@ -36,7 +37,7 @@ import {
 import type { RecipeRead, RecipeSummaryRead } from "@/features/recipes/types";
 import { ApiError } from "@/lib/api/client";
 import { hasPermission } from "@/lib/auth/permissions";
-import { formatMinorUnits } from "@/lib/money";
+import { formatMinorUnits, parseMajorToMinor } from "@/lib/money";
 import { permissionsForRole } from "@/lib/auth/role-permissions";
 import { useAppSelector } from "@/lib/store/hooks";
 
@@ -51,6 +52,9 @@ export function RecipesScreen() {
   const queryClient = useQueryClient();
   const roleKey = useAppSelector(
     (state) => state.auth.membership?.role.key ?? "",
+  );
+  const tenantCurrency = useAppSelector(
+    (state) => state.auth.tenant?.base_currency ?? "KES",
   );
   const canWrite = hasPermission(
     permissionsForRole(roleKey),
@@ -102,24 +106,21 @@ export function RecipesScreen() {
     [recipes],
   );
 
-  const sellableProducts = useMemo(
+  // Ingredients live in inventory; meals are recipe products and must not
+  // appear as ingredient options.
+  const ingredientProducts = useMemo(
     () =>
       products.filter(
         (product) =>
-          product.status === "active" &&
-          product.unit_price_minor != null &&
-          !recipeProductIds.has(product.id),
+          product.status === "active" && !recipeProductIds.has(product.id),
       ),
     [products, recipeProductIds],
   );
 
-  const ingredientProducts = useMemo(
-    () => products.filter((product) => product.status === "active"),
-    [products],
-  );
-
   async function invalidateRecipes() {
     await queryClient.invalidateQueries({ queryKey: ["recipes"] });
+    await queryClient.invalidateQueries({ queryKey: ["inventory", "products"] });
+    await queryClient.invalidateQueries({ queryKey: ["pos", "menu"] });
   }
 
   async function invalidateRecipeDetail(recipeId: string) {
@@ -139,10 +140,11 @@ export function RecipesScreen() {
       }),
     ),
     defaultValues: {
-      product_id: "",
+      meal_name: "",
+      unit_price_major: "",
       yields_quantity: "1",
       notes: "",
-      items: [{ ingredient_product_id: "", quantity: "" }],
+      items: [{ ingredient_product_id: "", quantity: "", unit_id: "" }],
     },
   });
 
@@ -151,11 +153,9 @@ export function RecipesScreen() {
     name: "items",
   });
 
-  const createMealProductId = createForm.watch("product_id");
-
   const addIngredientForm = useForm<RecipeIngredientLineValues>({
     resolver: zodResolver(recipeIngredientLineSchema),
-    defaultValues: { ingredient_product_id: "", quantity: "" },
+    defaultValues: { ingredient_product_id: "", quantity: "", unit_id: "" },
   });
 
   const editItemForm = useForm<{ quantity: string }>({
@@ -164,18 +164,20 @@ export function RecipesScreen() {
   });
 
   function ingredientOptions(
-    mealProductId: string | undefined,
     existingIngredientIds: string[] = [],
   ): ProductRead[] {
     const taken = new Set(existingIngredientIds);
-    return ingredientProducts.filter(
-      (product) =>
-        product.id !== mealProductId && !taken.has(product.id),
-    );
+    return ingredientProducts.filter((product) => !taken.has(product.id));
   }
 
   async function onCreateRecipe(values: CreateRecipeFormValues) {
     setActionError(null);
+    const unitPriceMinor = parseMajorToMinor(values.unit_price_major);
+    if (unitPriceMinor == null) {
+      setActionError("Enter a valid sell price");
+      return;
+    }
+
     const seen = new Set<string>();
     for (const line of values.items) {
       if (seen.has(line.ingredient_product_id)) {
@@ -185,33 +187,26 @@ export function RecipesScreen() {
       seen.add(line.ingredient_product_id);
     }
 
-    const ingredientById = new Map(
-      ingredientProducts.map((product) => [product.id, product]),
-    );
-
     try {
       const created = await createRecipe({
-        product_id: values.product_id,
+        meal_name: values.meal_name.trim(),
+        unit_price_minor: unitPriceMinor,
+        currency: tenantCurrency,
         yields_quantity: values.yields_quantity,
         notes: values.notes?.trim() || null,
-        items: values.items.map((line, index) => {
-          const ingredient = ingredientById.get(line.ingredient_product_id);
-          if (!ingredient) {
-            throw new Error("Ingredient product not found");
-          }
-          return {
-            ingredient_product_id: line.ingredient_product_id,
-            quantity: line.quantity,
-            unit_id: ingredient.base_unit.id,
-            sort_order: index,
-          };
-        }),
+        items: values.items.map((line, index) => ({
+          ingredient_product_id: line.ingredient_product_id,
+          quantity: line.quantity,
+          unit_id: line.unit_id,
+          sort_order: index,
+        })),
       });
       createForm.reset({
-        product_id: "",
+        meal_name: "",
+        unit_price_major: "",
         yields_quantity: "1",
         notes: "",
-        items: [{ ingredient_product_id: "", quantity: "" }],
+        items: [{ ingredient_product_id: "", quantity: "", unit_id: "" }],
       });
       setShowCreate(false);
       await invalidateRecipes();
@@ -263,21 +258,18 @@ export function RecipesScreen() {
   ) {
     if (!canWrite) return;
     setActionError(null);
-    const ingredient = ingredientProducts.find(
-      (product) => product.id === values.ingredient_product_id,
-    );
-    if (!ingredient) {
-      setActionError("Ingredient product not found");
-      return;
-    }
     try {
       await addRecipeItem(recipe.id, {
         ingredient_product_id: values.ingredient_product_id,
         quantity: values.quantity,
-        unit_id: ingredient.base_unit.id,
+        unit_id: values.unit_id,
         sort_order: recipe.items.length,
       });
-      addIngredientForm.reset({ ingredient_product_id: "", quantity: "" });
+      addIngredientForm.reset({
+        ingredient_product_id: "",
+        quantity: "",
+        unit_id: "",
+      });
       setShowAddIngredient(false);
       await invalidateRecipeDetail(recipe.id);
     } catch (error) {
@@ -324,8 +316,8 @@ export function RecipesScreen() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Recipes</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Link menu items to ingredient bills of materials. POS sales deduct
-            ingredients automatically when a recipe is active.
+            Create menu meals from inventory ingredients. Active recipes appear
+            on POS and deduct ingredients when sold.
           </p>
         </div>
         {canWrite ? (
@@ -350,9 +342,10 @@ export function RecipesScreen() {
       <Dialog open={showCreate && canWrite} onOpenChange={setShowCreate}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>New recipe</DialogTitle>
+            <DialogTitle>New meal recipe</DialogTitle>
             <DialogDescription>
-              Link a menu item to its ingredient bill of materials.
+              Name the meal customers order, set its sell price, then pick
+              inventory ingredients for the bill of materials.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -361,30 +354,42 @@ export function RecipesScreen() {
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="product_id" className="text-sm font-medium">
-                  Meal / menu item
+                <label htmlFor="meal_name" className="text-sm font-medium">
+                  Meal / menu item name
                 </label>
-                <select
-                  id="product_id"
+                <input
+                  id="meal_name"
+                  type="text"
+                  placeholder="e.g. Chicken Pilau"
                   className={fieldClassName}
-                  {...createForm.register("product_id")}
-                >
-                  <option value="">Select sellable product</option>
-                  {sellableProducts.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name}
-                    </option>
-                  ))}
-                </select>
-                {createForm.formState.errors.product_id ? (
+                  {...createForm.register("meal_name")}
+                />
+                {createForm.formState.errors.meal_name ? (
                   <p className="mt-1 text-sm text-red-600">
-                    {createForm.formState.errors.product_id.message}
+                    {createForm.formState.errors.meal_name.message}
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <label htmlFor="unit_price_major" className="text-sm font-medium">
+                  Sell price ({tenantCurrency})
+                </label>
+                <input
+                  id="unit_price_major"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={fieldClassName}
+                  {...createForm.register("unit_price_major")}
+                />
+                {createForm.formState.errors.unit_price_major ? (
+                  <p className="mt-1 text-sm text-red-600">
+                    {createForm.formState.errors.unit_price_major.message}
                   </p>
                 ) : null}
               </div>
               <div>
                 <label htmlFor="yields_quantity" className="text-sm font-medium">
-                  Yields (servings)
+                  Yields (servings this BOM makes)
                 </label>
                 <input
                   id="yields_quantity"
@@ -392,6 +397,10 @@ export function RecipesScreen() {
                   className={fieldClassName}
                   {...createForm.register("yields_quantity")}
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Usually 1. Ingredient amounts below are for that many
+                  servings.
+                </p>
                 {createForm.formState.errors.yields_quantity ? (
                   <p className="mt-1 text-sm text-red-600">
                     {createForm.formState.errors.yields_quantity.message}
@@ -414,13 +423,23 @@ export function RecipesScreen() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Ingredients</h3>
+                <div>
+                  <h3 className="text-sm font-semibold">Ingredients per serving</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Enter how much of each stocked ingredient one serving of
+                    this meal consumes (not a whole bag or sack).
+                  </p>
+                </div>
                 <Button
                   type="button"
                   variant="secondary"
                   size="sm"
                   onClick={() =>
-                    append({ ingredient_product_id: "", quantity: "" })
+                    append({
+                      ingredient_product_id: "",
+                      quantity: "",
+                      unit_id: "",
+                    })
                   }
                 >
                   Add line
@@ -429,7 +448,7 @@ export function RecipesScreen() {
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="grid gap-3 rounded-xl border border-border p-3 sm:grid-cols-[1fr_140px_auto]"
+                  className="space-y-3 rounded-xl border border-border p-3"
                 >
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">
@@ -442,36 +461,30 @@ export function RecipesScreen() {
                       )}
                     >
                       <option value="">Select ingredient</option>
-                      {ingredientOptions(createMealProductId).map(
-                        (product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
-                          </option>
-                        ),
-                      )}
+                      {ingredientOptions().map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name} ({product.base_unit.symbol})
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Quantity
-                    </label>
-                    <input
-                      inputMode="decimal"
-                      className={fieldClassName}
-                      {...createForm.register(`items.${index}.quantity`)}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    {fields.length > 1 ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => remove(index)}
-                      >
-                        Remove
-                      </Button>
-                    ) : null}
-                  </div>
+                  <IngredientMeasureFields
+                    form={createForm}
+                    productIdField={`items.${index}.ingredient_product_id`}
+                    quantityField={`items.${index}.quantity`}
+                    unitIdField={`items.${index}.unit_id`}
+                    products={ingredientProducts}
+                  />
+                  {fields.length > 1 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                    >
+                      Remove line
+                    </Button>
+                  ) : null}
                 </div>
               ))}
               {createForm.formState.errors.items?.message ? (
@@ -519,8 +532,8 @@ export function RecipesScreen() {
           ) : null}
           {!recipesQuery.isLoading && filteredRecipes.length === 0 ? (
             <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
-              No recipes yet. Create a BOM for a menu item so POS sales deduct
-              ingredients instead of the meal product.
+              No meals yet. Create a recipe with a meal name and ingredients —
+              that meal will then appear on POS.
             </p>
           ) : (
             <div className="glass-panel overflow-x-auto rounded-xl">
@@ -738,7 +751,8 @@ export function RecipesScreen() {
                     <DialogHeader>
                       <DialogTitle>Add ingredient</DialogTitle>
                       <DialogDescription>
-                        Add a line to the recipe bill of materials.
+                        How much of this ingredient one serving of the meal
+                        uses.
                       </DialogDescription>
                     </DialogHeader>
                     {selectedRecipe ? (
@@ -746,7 +760,7 @@ export function RecipesScreen() {
                         onSubmit={addIngredientForm.handleSubmit((values) =>
                           onAddIngredient(selectedRecipe, values),
                         )}
-                        className="grid gap-3 sm:grid-cols-[1fr_140px_auto]"
+                        className="space-y-3"
                       >
                         <div>
                           <label className="text-xs font-medium text-muted-foreground">
@@ -760,29 +774,35 @@ export function RecipesScreen() {
                           >
                             <option value="">Select ingredient</option>
                             {ingredientOptions(
-                              selectedRecipe.product_id,
                               selectedRecipe.items.map(
                                 (item) => item.ingredient_product_id,
                               ),
                             ).map((product) => (
                               <option key={product.id} value={product.id}>
-                                {product.name}
+                                {product.name} ({product.base_unit.symbol})
                               </option>
                             ))}
                           </select>
                         </div>
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">
-                            Quantity
-                          </label>
-                          <input
-                            inputMode="decimal"
-                            className={fieldClassName}
-                            {...addIngredientForm.register("quantity")}
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <Button type="submit" size="sm">Add</Button>
+                        <IngredientMeasureFields
+                          form={addIngredientForm}
+                          productIdField="ingredient_product_id"
+                          quantityField="quantity"
+                          unitIdField="unit_id"
+                          products={ingredientProducts}
+                        />
+                        <div className="flex gap-2">
+                          <Button type="submit" size="sm">
+                            Add
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAddIngredient(false)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       </form>
                     ) : null}
@@ -847,8 +867,9 @@ export function RecipesScreen() {
                       <thead className="bg-muted/60 text-muted-foreground">
                         <tr>
                           <th className="px-3 py-2 font-medium">Ingredient</th>
-                          <th className="px-3 py-2 font-medium">Quantity</th>
-                          <th className="px-3 py-2 font-medium">Unit</th>
+                          <th className="px-3 py-2 font-medium">
+                            Per serving
+                          </th>
                           {canWrite ? (
                             <th className="px-3 py-2 font-medium">Actions</th>
                           ) : null}
@@ -860,9 +881,8 @@ export function RecipesScreen() {
                             <td className="px-3 py-2 font-medium">
                               {item.ingredient_product.name}
                             </td>
-                            <td className="px-3 py-2">{item.quantity}</td>
                             <td className="px-3 py-2">
-                              {item.unit.symbol}
+                              {item.quantity} {item.unit.symbol}
                             </td>
                             {canWrite ? (
                               <td className="px-3 py-2">

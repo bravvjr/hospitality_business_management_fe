@@ -1,14 +1,35 @@
 import { apiFetch, apiFetchText } from "@/lib/api/client";
-import { listProducts } from "@/features/inventory/api";
+import { listRecipes } from "@/features/recipes/api";
 import type { Page, ProductRead } from "@/features/inventory/types";
 
 import type { OrderRead, SaleReceiptRead } from "./types";
 
-export function listSellableProducts(params?: {
+export type { OrderRead };
+
+/** Menu meals with an active recipe — not raw inventory ingredients. */
+export async function listSellableProducts(params?: {
   limit?: number;
   offset?: number;
 }): Promise<Page<ProductRead>> {
-  return listProducts(params);
+  const limit = params?.limit ?? 200;
+  const offset = params?.offset ?? 0;
+  const recipes = await listRecipes({ limit: 200, offset: 0 });
+  const meals = recipes.items
+    .filter(
+      (recipe) =>
+        recipe.status === "active" &&
+        recipe.product.status === "active" &&
+        recipe.product.unit_price_minor != null &&
+        recipe.product.currency != null,
+    )
+    .map((recipe) => recipe.product);
+
+  return {
+    items: meals.slice(offset, offset + limit),
+    total: meals.length,
+    limit,
+    offset,
+  };
 }
 
 export function createOrder(payload: {
@@ -78,4 +99,19 @@ export function getReceipt(orderId: string): Promise<SaleReceiptRead> {
 
 export function getReceiptText(orderId: string): Promise<string> {
   return apiFetchText(`/api/v1/pos/orders/${orderId}/receipt.txt`);
+}
+
+export function listOrders(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Page<OrderRead>> {
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (params?.status) query.set("status", params.status);
+  return apiFetch<Page<OrderRead>>(`/api/v1/pos/orders?${query.toString()}`);
 }
