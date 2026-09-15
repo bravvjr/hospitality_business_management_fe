@@ -54,7 +54,10 @@ export function InventoryScreen() {
   });
 
   const products = useMemo(
-    () => productsQuery.data?.items ?? [],
+    () =>
+      (productsQuery.data?.items ?? []).filter(
+        (product) => product.category?.toLowerCase() !== "menu",
+      ),
     [productsQuery.data?.items],
   );
   const levels = levelsQuery.data?.items ?? [];
@@ -74,7 +77,7 @@ export function InventoryScreen() {
   async function invalidateInventory() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["inventory"] }),
-      queryClient.invalidateQueries({ queryKey: ["inventory", "products", "pos"] }),
+      queryClient.invalidateQueries({ queryKey: ["pos", "menu"] }),
     ]);
   }
 
@@ -98,12 +101,13 @@ export function InventoryScreen() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Inventory</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage products, stock levels, and movement history.
+            Track ingredient stock (milk, eggs, rice, …). Menu meals are created
+            under Recipes and sold on POS.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={() => setShowCreateProduct(true)}>
-            Add product
+            Add ingredient
           </Button>
           <Button
             type="button"
@@ -180,7 +184,7 @@ export function InventoryScreen() {
       <div className="flex gap-2 border-b border-border/60">
         {(
           [
-            ["products", "Products"],
+            ["products", "Ingredients"],
             ["stock", "Stock levels"],
             ["movements", "Movements"],
           ] as const

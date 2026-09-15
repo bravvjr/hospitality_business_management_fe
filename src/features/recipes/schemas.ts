@@ -7,8 +7,16 @@ const quantitySchema = z
     message: "Enter a positive number",
   });
 
+const moneyMajorSchema = z
+  .string()
+  .min(1, "Sell price is required")
+  .refine((value) => /^\d+(\.\d{1,2})?$/.test(value.trim()), {
+    message: "Enter a valid price",
+  });
+
 export const recipeCreateSchema = z.object({
-  product_id: z.string().min(1, "Meal product is required"),
+  meal_name: z.string().trim().min(1, "Meal name is required").max(200),
+  unit_price_major: moneyMajorSchema,
   yields_quantity: quantitySchema,
   notes: z.string().max(2000).optional(),
 });

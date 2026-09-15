@@ -1,14 +1,33 @@
 import { apiFetch, apiFetchText } from "@/lib/api/client";
-import { listProducts } from "@/features/inventory/api";
+import { listRecipes } from "@/features/recipes/api";
 import type { Page, ProductRead } from "@/features/inventory/types";
 
 import type { OrderRead, SaleReceiptRead } from "./types";
 
-export function listSellableProducts(params?: {
+/** Menu meals with an active recipe — not raw inventory ingredients. */
+export async function listSellableProducts(params?: {
   limit?: number;
   offset?: number;
 }): Promise<Page<ProductRead>> {
-  return listProducts(params);
+  const limit = params?.limit ?? 200;
+  const offset = params?.offset ?? 0;
+  const recipes = await listRecipes({ limit: 200, offset: 0 });
+  const meals = recipes.items
+    .filter(
+      (recipe) =>
+        recipe.status === "active" &&
+        recipe.product.status === "active" &&
+        recipe.product.unit_price_minor != null &&
+        recipe.product.currency != null,
+    )
+    .map((recipe) => recipe.product);
+
+  return {
+    items: meals.slice(offset, offset + limit),
+    total: meals.length,
+    limit,
+    offset,
+  };
 }
 
 export function createOrder(payload: {
