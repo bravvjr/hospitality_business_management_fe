@@ -15,6 +15,7 @@ import {
   updateOrderItem,
 } from "@/features/pos/api";
 import { ReceiptModal } from "@/features/pos/components/receipt-modal";
+import { SalesHistoryPanel } from "@/features/pos/components/sales-history-panel";
 import type { ProductRead } from "@/features/inventory/types";
 import { ApiError } from "@/lib/api/client";
 import { formatMinorUnits, parseMajorToMinor } from "@/lib/money";
@@ -24,6 +25,8 @@ import {
   setOpenOrderId,
   setReceiptOrderId,
 } from "@/lib/store/slices/pos-slice";
+
+type PosView = "sell" | "history";
 
 function quantityStep(current: string, delta: number): string {
   const next = Number(current) + delta;
@@ -41,6 +44,7 @@ export function PosScreen() {
   );
 
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<PosView>("sell");
   const [actionError, setActionError] = useState<string | null>(null);
   const [tenderedMajor, setTenderedMajor] = useState("");
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
@@ -154,6 +158,8 @@ export function PosScreen() {
       dispatch(clearPosSale());
       setTenderedMajor("");
       queryClient.removeQueries({ queryKey: ["pos", "order", order.id] });
+      await queryClient.invalidateQueries({ queryKey: ["pos", "orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["pos", "menu"] });
     } catch (error) {
       setActionError(
         error instanceof ApiError ? error.message : "Could not complete sale",
@@ -173,7 +179,33 @@ export function PosScreen() {
   const canCheckout = Boolean(order && order.items.length > 0);
 
   return (
-    <div className="flex h-full min-h-[calc(100vh-8rem)] flex-col gap-4 lg:flex-row">
+    <div className="flex h-full min-h-[calc(100vh-8rem)] flex-col gap-4">
+      <div className="flex flex-wrap gap-2 border-b border-border/60">
+        {(
+          [
+            ["sell", "Sell"],
+            ["history", "Sales history"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setView(key)}
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+              view === key
+                ? "border-brand-rich-teal text-brand-rich-teal"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "history" ? <SalesHistoryPanel /> : null}
+
+      {view === "sell" ? (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <section className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -354,6 +386,8 @@ export function PosScreen() {
           onClose={() => dispatch(setReceiptOrderId(null))}
           onNewSale={startNewSale}
         />
+      ) : null}
+    </div>
       ) : null}
     </div>
   );

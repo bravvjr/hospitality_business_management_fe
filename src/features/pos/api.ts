@@ -4,6 +4,8 @@ import type { Page, ProductRead } from "@/features/inventory/types";
 
 import type { OrderRead, SaleReceiptRead } from "./types";
 
+export type { OrderRead };
+
 /** Menu meals with an active recipe — not raw inventory ingredients. */
 export async function listSellableProducts(params?: {
   limit?: number;
@@ -97,4 +99,19 @@ export function getReceipt(orderId: string): Promise<SaleReceiptRead> {
 
 export function getReceiptText(orderId: string): Promise<string> {
   return apiFetchText(`/api/v1/pos/orders/${orderId}/receipt.txt`);
+}
+
+export function listOrders(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Page<OrderRead>> {
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (params?.status) query.set("status", params.status);
+  return apiFetch<Page<OrderRead>>(`/api/v1/pos/orders?${query.toString()}`);
 }

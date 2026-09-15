@@ -53,6 +53,26 @@ export interface ProductUpdateRequest {
   status?: "active" | "inactive" | null;
 }
 
+export interface ProductUnitRead {
+  id: string;
+  product_id: string;
+  unit: UnitRead;
+  to_base_factor: string;
+  is_stock: boolean;
+  is_purchase: boolean;
+  is_recipe: boolean;
+  is_sales: boolean;
+}
+
+export interface ProductUnitCreateRequest {
+  unit_id: string;
+  to_base_factor: string;
+  is_stock?: boolean;
+  is_purchase?: boolean;
+  is_recipe?: boolean;
+  is_sales?: boolean;
+}
+
 export interface StockLevelRead {
   product_id: string;
   product_name: string;

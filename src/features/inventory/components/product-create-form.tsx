@@ -103,8 +103,8 @@ export function ProductCreateForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
-        <label htmlFor="name" className="text-sm font-medium">
-          Product name
+          <label htmlFor="name" className="text-sm font-medium">
+          Ingredient name
         </label>
         <input id="name" className={fieldClassName} {...register("name")} />
         {errors.name ? (
@@ -230,7 +230,7 @@ export function ProductCreateForm({
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving…" : "Create product"}
+          {isSubmitting ? "Saving…" : "Create ingredient"}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel

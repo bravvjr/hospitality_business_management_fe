@@ -26,6 +26,7 @@ export type RecipeCreateFormValues = z.infer<typeof recipeCreateSchema>;
 export const recipeIngredientLineSchema = z.object({
   ingredient_product_id: z.string().min(1, "Ingredient is required"),
   quantity: quantitySchema,
+  unit_id: z.string().min(1, "Unit is required"),
 });
 
 export type RecipeIngredientLineValues = z.infer<typeof recipeIngredientLineSchema>;

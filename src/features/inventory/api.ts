@@ -4,6 +4,8 @@ import type {
   Page,
   ProductCreateRequest,
   ProductRead,
+  ProductUnitCreateRequest,
+  ProductUnitRead,
   ProductUpdateRequest,
   StockAdjustmentRequest,
   StockLevelRead,
@@ -44,6 +46,25 @@ export function updateProduct(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+export function listProductUnits(productId: string): Promise<ProductUnitRead[]> {
+  return apiFetch<ProductUnitRead[]>(
+    `/api/v1/inventory/products/${productId}/units`,
+  );
+}
+
+export function addProductUnit(
+  productId: string,
+  payload: ProductUnitCreateRequest,
+): Promise<ProductUnitRead> {
+  return apiFetch<ProductUnitRead>(
+    `/api/v1/inventory/products/${productId}/units`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export function listStockLevels(params?: {
