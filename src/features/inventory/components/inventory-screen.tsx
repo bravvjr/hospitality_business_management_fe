@@ -5,6 +5,13 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   listProducts,
   listStockLevels,
   listStockMovements,
@@ -13,6 +20,7 @@ import {
 import { ProductCreateForm } from "@/features/inventory/components/product-create-form";
 import {
   StockActionForm,
+  stockActionTitle,
   type StockActionKind,
 } from "@/features/inventory/components/stock-action-form";
 import { formatMinorUnits } from "@/lib/money";
@@ -121,40 +129,55 @@ export function InventoryScreen() {
         </div>
       </div>
 
-      {(showCreateProduct || stockAction) && (
-        <div className="space-y-4">
-          {showCreateProduct ? (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="text-lg font-semibold">New product</h2>
-              <div className="mt-4">
-                <ProductCreateForm
-                  onCancel={() => setShowCreateProduct(false)}
-                  onCreated={async () => {
-                    setShowCreateProduct(false);
-                    await invalidateInventory();
-                    setTab("products");
-                  }}
-                />
-              </div>
-            </div>
-          ) : null}
-          {stockAction ? (
-            <StockActionForm
-              kind={stockAction.kind}
-              products={products}
-              initialProductId={stockAction.productId}
-              onCancel={() => setStockAction(null)}
-              onDone={async () => {
-                setStockAction(null);
-                await invalidateInventory();
-                setTab(stockAction.kind === "receipt" ? "stock" : "movements");
-              }}
-            />
-          ) : null}
-        </div>
-      )}
+      <Dialog open={showCreateProduct} onOpenChange={setShowCreateProduct}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>New product</DialogTitle>
+            <DialogDescription>
+              Add a product to receive stock and sell in POS.
+            </DialogDescription>
+          </DialogHeader>
+          <ProductCreateForm
+            onCancel={() => setShowCreateProduct(false)}
+            onCreated={async () => {
+              setShowCreateProduct(false);
+              await invalidateInventory();
+              setTab("products");
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
-      <div className="flex gap-2 border-b border-border">
+      <Dialog
+        open={stockAction != null}
+        onOpenChange={(open) => {
+          if (!open) setStockAction(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          {stockAction ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>{stockActionTitle(stockAction.kind)}</DialogTitle>
+              </DialogHeader>
+              <StockActionForm
+                kind={stockAction.kind}
+                products={products}
+                initialProductId={stockAction.productId}
+                onCancel={() => setStockAction(null)}
+                onDone={async () => {
+                  const kind = stockAction.kind;
+                  setStockAction(null);
+                  await invalidateInventory();
+                  setTab(kind === "receipt" ? "stock" : "movements");
+                }}
+              />
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex gap-2 border-b border-border/60">
         {(
           [
             ["products", "Products"],
@@ -188,7 +211,7 @@ export function InventoryScreen() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search products…"
-            className="w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+            className="glass-surface w-full max-w-md rounded-lg px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
           />
           {productsQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading products…</p>
@@ -199,14 +222,14 @@ export function InventoryScreen() {
             </p>
           ) : null}
           {!productsQuery.isLoading && filteredProducts.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
               No products yet. Add one to start receiving stock and selling in
               POS.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="glass-panel overflow-x-auto rounded-xl">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-muted/60 text-muted-foreground">
+                <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">Name</th>
                     <th className="px-3 py-2 font-medium">SKU</th>
@@ -219,7 +242,7 @@ export function InventoryScreen() {
                 </thead>
                 <tbody>
                   {filteredProducts.map((product) => (
-                    <tr key={product.id} className="border-t border-border">
+                    <tr key={product.id} className="border-t border-border/60">
                       <td className="px-3 py-2">
                         <div className="font-medium">{product.name}</div>
                         {product.category ? (
@@ -297,14 +320,14 @@ export function InventoryScreen() {
             </p>
           ) : null}
           {!levelsQuery.isLoading && levels.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
               No stock levels yet. Receive stock against a product to create
               levels.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="glass-panel overflow-x-auto rounded-xl">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-muted/60 text-muted-foreground">
+                <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">Product</th>
                     <th className="px-3 py-2 font-medium">On hand</th>
@@ -315,7 +338,7 @@ export function InventoryScreen() {
                 </thead>
                 <tbody>
                   {levels.map((level) => (
-                    <tr key={level.product_id} className="border-t border-border">
+                    <tr key={level.product_id} className="border-t border-border/60">
                       <td className="px-3 py-2 font-medium">
                         {level.product_name}
                       </td>
@@ -396,13 +419,13 @@ export function InventoryScreen() {
             </p>
           ) : null}
           {!movementsQuery.isLoading && movements.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
               No movements recorded yet.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="glass-panel overflow-x-auto rounded-xl">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-muted/60 text-muted-foreground">
+                <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">When</th>
                     <th className="px-3 py-2 font-medium">Type</th>
@@ -417,7 +440,7 @@ export function InventoryScreen() {
                       products.find((p) => p.id === movement.product_id)
                         ?.name ?? movement.product_id.slice(0, 8);
                     return (
-                      <tr key={movement.id} className="border-t border-border">
+                      <tr key={movement.id} className="border-t border-border/60">
                         <td className="px-3 py-2 text-muted-foreground">
                           {new Date(movement.created_at).toLocaleString()}
                         </td>

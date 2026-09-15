@@ -6,6 +6,13 @@ import { useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { listProducts } from "@/features/inventory/api";
 import type { ProductRead } from "@/features/inventory/types";
 import {
@@ -325,11 +332,11 @@ export function RecipesScreen() {
           <Button
             type="button"
             onClick={() => {
-              setShowCreate((open) => !open);
+              setShowCreate(true);
               setActionError(null);
             }}
           >
-            {showCreate ? "Cancel" : "New recipe"}
+            New recipe
           </Button>
         ) : null}
       </div>
@@ -340,12 +347,17 @@ export function RecipesScreen() {
         </p>
       ) : null}
 
-      {showCreate && canWrite ? (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-lg font-semibold">New recipe</h2>
+      <Dialog open={showCreate && canWrite} onOpenChange={setShowCreate}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>New recipe</DialogTitle>
+            <DialogDescription>
+              Link a menu item to its ingredient bill of materials.
+            </DialogDescription>
+          </DialogHeader>
           <form
             onSubmit={createForm.handleSubmit(onCreateRecipe)}
-            className="mt-4 space-y-4"
+            className="space-y-4"
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -485,8 +497,8 @@ export function RecipesScreen() {
               </Button>
             </div>
           </form>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <section className="space-y-3">
@@ -506,12 +518,12 @@ export function RecipesScreen() {
             </p>
           ) : null}
           {!recipesQuery.isLoading && filteredRecipes.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
               No recipes yet. Create a BOM for a menu item so POS sales deduct
               ingredients instead of the meal product.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="glass-panel overflow-x-auto rounded-xl">
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-muted/60 text-muted-foreground">
                   <tr>
@@ -549,7 +561,7 @@ export function RecipesScreen() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-5">
+        <section className="glass-panel rounded-2xl p-5">
           {!selectedId ? (
             <p className="text-sm text-muted-foreground">
               Select a recipe to view ingredients and manage the BOM.
@@ -600,7 +612,7 @@ export function RecipesScreen() {
                 ) : null}
               </div>
 
-              <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="glass-surface rounded-xl p-4">
                 <h3 className="text-sm font-semibold">Ingredient cost</h3>
                 {costQuery.isLoading ? (
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -711,56 +723,118 @@ export function RecipesScreen() {
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => setShowAddIngredient((open) => !open)}
+                      onClick={() => setShowAddIngredient(true)}
                     >
-                      {showAddIngredient ? "Cancel" : "Add ingredient"}
+                      Add ingredient
                     </Button>
                   ) : null}
                 </div>
 
-                {showAddIngredient && canWrite ? (
-                  <form
-                    onSubmit={addIngredientForm.handleSubmit((values) =>
-                      onAddIngredient(selectedRecipe, values),
-                    )}
-                    className="grid gap-3 rounded-xl border border-border p-3 sm:grid-cols-[1fr_140px_auto]"
-                  >
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Ingredient
-                      </label>
-                      <select
-                        className={fieldClassName}
-                        {...addIngredientForm.register("ingredient_product_id")}
+                <Dialog
+                  open={showAddIngredient && canWrite}
+                  onOpenChange={setShowAddIngredient}
+                >
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Add ingredient</DialogTitle>
+                      <DialogDescription>
+                        Add a line to the recipe bill of materials.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {selectedRecipe ? (
+                      <form
+                        onSubmit={addIngredientForm.handleSubmit((values) =>
+                          onAddIngredient(selectedRecipe, values),
+                        )}
+                        className="grid gap-3 sm:grid-cols-[1fr_140px_auto]"
                       >
-                        <option value="">Select ingredient</option>
-                        {ingredientOptions(
-                          selectedRecipe.product_id,
-                          selectedRecipe.items.map(
-                            (item) => item.ingredient_product_id,
-                          ),
-                        ).map((product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Quantity
-                      </label>
-                      <input
-                        inputMode="decimal"
-                        className={fieldClassName}
-                        {...addIngredientForm.register("quantity")}
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button type="submit" size="sm">Add</Button>
-                    </div>
-                  </form>
-                ) : null}
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">
+                            Ingredient
+                          </label>
+                          <select
+                            className={fieldClassName}
+                            {...addIngredientForm.register(
+                              "ingredient_product_id",
+                            )}
+                          >
+                            <option value="">Select ingredient</option>
+                            {ingredientOptions(
+                              selectedRecipe.product_id,
+                              selectedRecipe.items.map(
+                                (item) => item.ingredient_product_id,
+                              ),
+                            ).map((product) => (
+                              <option key={product.id} value={product.id}>
+                                {product.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">
+                            Quantity
+                          </label>
+                          <input
+                            inputMode="decimal"
+                            className={fieldClassName}
+                            {...addIngredientForm.register("quantity")}
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button type="submit" size="sm">Add</Button>
+                        </div>
+                      </form>
+                    ) : null}
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog
+                  open={editingItemId != null && canWrite}
+                  onOpenChange={(open) => {
+                    if (!open) setEditingItemId(null);
+                  }}
+                >
+                  <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle>Edit quantity</DialogTitle>
+                      <DialogDescription>
+                        Update the ingredient amount for this recipe line.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        if (selectedRecipe && editingItemId) {
+                          void onSaveItemQuantity(
+                            selectedRecipe.id,
+                            editingItemId,
+                          );
+                        }
+                      }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="text-sm font-medium">Quantity</label>
+                        <input
+                          className={fieldClassName}
+                          {...editItemForm.register("quantity")}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm">Save</Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingItemId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
 
                 {selectedRecipe.items.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
@@ -786,72 +860,37 @@ export function RecipesScreen() {
                             <td className="px-3 py-2 font-medium">
                               {item.ingredient_product.name}
                             </td>
-                            <td className="px-3 py-2">
-                              {editingItemId === item.id ? (
-                                <input
-                                  className="w-24 rounded border border-border bg-background px-2 py-1"
-                                  {...editItemForm.register("quantity")}
-                                />
-                              ) : (
-                                item.quantity
-                              )}
-                            </td>
+                            <td className="px-3 py-2">{item.quantity}</td>
                             <td className="px-3 py-2">
                               {item.unit.symbol}
                             </td>
                             {canWrite ? (
                               <td className="px-3 py-2">
                                 <div className="flex flex-wrap gap-2">
-                                  {editingItemId === item.id ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="text-brand-rich-teal hover:underline"
-                                        onClick={() =>
-                                          void onSaveItemQuantity(
-                                            selectedRecipe.id,
-                                            item.id,
-                                          )
-                                        }
-                                      >
-                                        Save
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="text-muted-foreground hover:underline"
-                                        onClick={() => setEditingItemId(null)}
-                                      >
-                                        Cancel
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="text-brand-rich-teal hover:underline"
-                                        onClick={() => {
-                                          setEditingItemId(item.id);
-                                          editItemForm.reset({
-                                            quantity: item.quantity,
-                                          });
-                                        }}
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="text-muted-foreground hover:underline"
-                                        onClick={() =>
-                                          void onDeleteItem(
-                                            selectedRecipe.id,
-                                            item.id,
-                                          )
-                                        }
-                                      >
-                                        Remove
-                                      </button>
-                                    </>
-                                  )}
+                                  <button
+                                    type="button"
+                                    className="text-brand-rich-teal hover:underline"
+                                    onClick={() => {
+                                      setEditingItemId(item.id);
+                                      editItemForm.reset({
+                                        quantity: item.quantity,
+                                      });
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="text-muted-foreground hover:underline"
+                                    onClick={() =>
+                                      void onDeleteItem(
+                                        selectedRecipe.id,
+                                        item.id,
+                                      )
+                                    }
+                                  >
+                                    Remove
+                                  </button>
                                 </div>
                               </td>
                             ) : null}

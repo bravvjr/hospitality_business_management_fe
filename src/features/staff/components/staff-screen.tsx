@@ -7,6 +7,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
   addStaff,
@@ -139,12 +146,17 @@ export function StaffScreen() {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      {showForm ? (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-lg font-semibold">New staff member</h2>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>New staff member</DialogTitle>
+            <DialogDescription>
+              Invite someone to access this business with a role.
+            </DialogDescription>
+          </DialogHeader>
           <form
             onSubmit={form.handleSubmit(onAdd)}
-            className="mt-4 grid gap-4 sm:grid-cols-2"
+            className="grid gap-4 sm:grid-cols-2"
           >
             <div className="sm:col-span-2">
               <label htmlFor="email" className="text-sm font-medium">
@@ -206,8 +218,8 @@ export function StaffScreen() {
               </Button>
             </div>
           </form>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
 
       {staffQuery.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading staff…</p>
@@ -219,11 +231,11 @@ export function StaffScreen() {
       ) : null}
 
       {!staffQuery.isLoading && staff.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+        <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
           No staff listed.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="glass-panel overflow-x-auto rounded-xl">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-muted/60 text-muted-foreground">
               <tr>

@@ -33,9 +33,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-56 shrink-0 border-r border-border bg-card md:flex md:flex-col">
-        <div className="border-b border-border p-4">
+    <div className="flex min-h-screen bg-app-gradient">
+      <aside className="glass-surface hidden w-56 shrink-0 border-r md:flex md:flex-col">
+        <div className="border-b border-border/60 p-4">
           <p className="text-sm font-semibold text-brand-rich-teal">HBM Platform</p>
           {tenant ? (
             <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6">
+        <header className="glass-surface flex items-center justify-between border-b px-4 py-3 md:px-6">
           <div className="min-w-0">
             {user ? (
               <>
