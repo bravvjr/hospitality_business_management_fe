@@ -125,17 +125,9 @@ export function StockActionForm({
     }
   }
 
-  const title =
-    kind === "receipt"
-      ? "Receive stock"
-      : kind === "usage"
-        ? "Record usage"
-        : "Adjust stock";
-
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <div>
+      <p className="text-sm text-muted-foreground">
         Quantities use the product base unit for now.
       </p>
       <div className="mt-4">
@@ -300,6 +292,14 @@ export function StockActionForm({
       </div>
     </div>
   );
+}
+
+export function stockActionTitle(kind: StockActionKind): string {
+  return kind === "receipt"
+    ? "Receive stock"
+    : kind === "usage"
+      ? "Record usage"
+      : "Adjust stock";
 }
 
 function ErrorBanner({ message }: { message: string }) {

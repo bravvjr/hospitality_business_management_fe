@@ -7,6 +7,13 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   createExpense,
   createExpenseCategory,
   fetchExpenseSummary,
@@ -161,7 +168,7 @@ export function ExpensesScreen() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <header className="glass-section flex flex-col gap-3 p-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Expenses</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -183,10 +190,10 @@ export function ExpensesScreen() {
             Add category
           </Button>
         </div>
-      </div>
+      </header>
 
       {summaryQuery.data ? (
-        <div className="rounded-2xl border border-border bg-card p-4 sm:flex sm:items-center sm:justify-between">
+        <div className="glass-panel rounded-2xl p-4 sm:flex sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
               Total {summaryQuery.data.from_date} → {summaryQuery.data.to_date}
@@ -209,17 +216,22 @@ export function ExpensesScreen() {
         <p className="text-sm text-red-600">{actionError}</p>
       ) : null}
 
-      {showExpenseForm ? (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-lg font-semibold">New expense</h2>
+      <Dialog open={showExpenseForm} onOpenChange={setShowExpenseForm}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>New expense</DialogTitle>
+            <DialogDescription>
+              Record a business expense against a category.
+            </DialogDescription>
+          </DialogHeader>
           {activeCategories.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Create an active category first.
             </p>
           ) : (
             <form
               onSubmit={expenseForm.handleSubmit(onCreateExpense)}
-              className="mt-4 grid gap-4 sm:grid-cols-2"
+              className="grid gap-4 sm:grid-cols-2"
             >
               <div className="sm:col-span-2">
                 <label className="text-sm font-medium" htmlFor="category_id">
@@ -307,15 +319,20 @@ export function ExpensesScreen() {
               </div>
             </form>
           )}
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
 
-      {showCategoryForm ? (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-lg font-semibold">New category</h2>
+      <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New category</DialogTitle>
+            <DialogDescription>
+              Group expenses under a named category.
+            </DialogDescription>
+          </DialogHeader>
           <form
             onSubmit={categoryForm.handleSubmit(onCreateCategory)}
-            className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"
+            className="flex flex-col gap-3 sm:flex-row sm:items-end"
           >
             <div className="flex-1">
               <label className="text-sm font-medium" htmlFor="cat-name">
@@ -338,10 +355,10 @@ export function ExpensesScreen() {
               Cancel
             </Button>
           </form>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
 
-      <div className="flex gap-2 border-b border-border">
+      <div className="flex gap-2 border-b border-border/60">
         {(
           [
             ["expenses", "Entries"],
@@ -395,11 +412,11 @@ export function ExpensesScreen() {
             <p className="text-sm text-muted-foreground">Loading expenses…</p>
           ) : null}
           {!expensesQuery.isLoading && expenses.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p className="glass-panel rounded-xl border-dashed p-6 text-sm text-muted-foreground">
               No expenses in this range.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="glass-panel overflow-x-auto rounded-xl">
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-muted/60 text-muted-foreground">
                   <tr>
@@ -442,7 +459,7 @@ export function ExpensesScreen() {
               No categories yet.
             </p>
           ) : (
-            <ul className="divide-y divide-border rounded-xl border border-border">
+            <ul className="glass-panel divide-y divide-border/60 rounded-xl">
               {categories.map((category) => (
                 <li
                   key={category.id}

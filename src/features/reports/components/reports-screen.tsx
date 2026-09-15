@@ -140,7 +140,7 @@ export function ReportsScreen() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <header className="glass-section flex flex-col gap-4 p-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -162,9 +162,9 @@ export function ReportsScreen() {
             </Button>
           ))}
         </div>
-      </div>
+      </header>
 
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-4">
+      <section className="glass-section space-y-4 p-4">
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((item) => (
             <Button
@@ -332,7 +332,7 @@ function Kpi({
   hint: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="glass-kpi p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
         {value}
@@ -354,12 +354,12 @@ function ReportTable({
   emptyMessage?: string;
 }) {
   return (
-    <section className="space-y-3">
+    <section className="glass-section space-y-3 p-4">
       <h2 className="text-lg font-semibold">{title}</h2>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-xl border border-border/50">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-muted/60 text-muted-foreground">
               <tr>
